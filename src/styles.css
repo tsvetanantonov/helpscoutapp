@@ -1,0 +1,85 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #1f2933;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app {
+  width: 100%;
+  padding: 16px;
+}
+
+.header {
+  border-bottom: 1px solid #e4e7ec;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+}
+
+.profile {
+  display: grid;
+  gap: 14px;
+}
+
+.detail {
+  border-bottom: 1px solid #eef1f4;
+  padding-bottom: 12px;
+}
+
+.detailMultiline p {
+  white-space: pre-wrap;
+}
+
+.label {
+  color: #667085;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.message {
+  align-items: flex-start;
+  display: grid;
+  gap: 8px;
+  padding: 18px 0;
+}
+
+.raw {
+  border-top: 1px solid #e4e7ec;
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.raw summary {
+  color: #405261;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.raw dl {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
+.field {
+  display: grid;
+  gap: 3px;
+}
+
+.field dt {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.field dd {
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: anywhere;
+}

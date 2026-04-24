@@ -1,0 +1,26 @@
+{
+  "name": "helpscout-airtable",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Help Scout App Developer Platform sidebar app backed by Airtable",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "dev:vite": "vite --host 0.0.0.0",
+    "dev:vercel": "vercel dev",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@helpscout/javascript-sdk": "^0.10.0",
+    "@helpscout/ui-kit": "^0.13.6",
+    "@vitejs/plugin-react": "^4.2.1",
+    "airtable": "^0.12.2",
+    "dotenv": "^16.4.5",
+    "vite": "^5.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "vercel": "^47.0.5"
+  }
+}
