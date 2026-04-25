@@ -106,7 +106,6 @@ function App() {
         <HomePage
           customer={customer}
           customerData={customerData}
-          email={email}
           fields={fields}
           onCurrentTrips={() => setPage('currentTrips')}
           onPastTrips={() => setPage('pastTrips')}
@@ -116,8 +115,7 @@ function App() {
   );
 }
 
-function HomePage({ customer, customerData, email, fields, onCurrentTrips, onPastTrips }) {
-  const name = getCustomerName(fields);
+function HomePage({ customer, customerData, fields, onCurrentTrips, onPastTrips }) {
   const age = fields.Age;
   const phone = fields['Phone Number'];
   const clientFlag = fields['Client Flag'];
@@ -129,10 +127,7 @@ function HomePage({ customer, customerData, email, fields, onCurrentTrips, onPas
   return (
     <>
       <header className="topbar">
-        <div>
-          <Heading level="h1">{name || 'Airtable Customer'}</Heading>
-          <CopyLine value={email} muted />
-        </div>
+        <Heading level="h1">Airtable</Heading>
         {customer?.stackerUrl && (
           <a className="iconButton" href={customer.stackerUrl} rel="noreferrer" target="_blank" title="Open customer in Stacker">
             <span aria-hidden="true">↗</span>
@@ -141,11 +136,14 @@ function HomePage({ customer, customerData, email, fields, onCurrentTrips, onPas
       </header>
 
       {notFit && <div className="alert">Not a Fit</div>}
-      {clientFlag && <CopyBlock label="Client Flag" value={clientFlag} tone="warning" />}
+      {clientFlag && <TextBlock label="Client Flag" value={clientFlag} tone="warning" />}
+
+      <section className="summaryStack">
+        <AgeMetric value={age} />
+        <PhoneRow value={phone} />
+      </section>
 
       <section className="gridTwo">
-        <CopyMetric label="Age" value={age} />
-        <CopyMetric label="Phone" value={phone} />
         <TripMetric label="Future Trips" count={currentTrips.length} onClick={onCurrentTrips} />
         <TripMetric label="Past Trips" count={pastTrips.length} onClick={onPastTrips} />
       </section>
@@ -169,8 +167,10 @@ function LeadsSection({ title, leads }) {
       <div className="leadList">
         {leads.map((lead) => (
           <article className="lead" key={lead.id}>
-            <CopyLine value={`${lead.abbreviation} - ${lead.shortTripName || 'Trip not set'} :`} strong />
-            {lead.notes && <CopyLine value={lead.notes} multiline />}
+            <div className="leadTitle" title={lead.status}>
+              {lead.abbreviation} - {lead.shortTripName || 'Trip not set'} :
+            </div>
+            {lead.notes && <div className="leadNotes">{lead.notes}</div>}
           </article>
         ))}
       </div>
@@ -187,7 +187,9 @@ function FutureInterestSection({ leads }) {
       <div className="leadList">
         {leads.map((lead) => (
           <article className="lead" key={lead.id}>
-            <CopyLine value={lead.futureTripRequests || 'No future trip tags'} multiline />
+            <div className="leadTitle" title={lead.status}>
+              {lead.futureTripRequests || 'No future trip tags'}
+            </div>
           </article>
         ))}
       </div>
@@ -201,15 +203,16 @@ function TripsPage({ title, trips, onBack }) {
       <header className="topbar">
         <Heading level="h1">{title}</Heading>
       </header>
-      <section className="section">
+      <section className="tripSection">
         {trips.length ? (
           <div className="tripList">
             {trips.map((trip, index) => (
-              <CopyLine
+              <div
+                className={trip.cancelled ? 'tripItem cancelled' : 'tripItem'}
                 key={`${trip.id || trip.name}-${index}`}
-                value={trip.name}
-                className={trip.cancelled ? 'cancelled' : ''}
-              />
+              >
+                {trip.name}
+              </div>
             ))}
           </div>
         ) : (
@@ -223,12 +226,29 @@ function TripsPage({ title, trips, onBack }) {
   );
 }
 
-function CopyMetric({ label, value }) {
+function AgeMetric({ value }) {
   if (!hasValue(value)) return null;
   return (
-    <div className="metric">
-      <Text size={11} className="label">{label}</Text>
-      <CopyLine value={formatValue(value)} strong />
+    <div className="ageRow">
+      <Text size={11} className="label">Age</Text>
+      <span>{formatValue(value)}</span>
+    </div>
+  );
+}
+
+function PhoneRow({ value }) {
+  if (!hasValue(value)) return null;
+  const text = formatValue(value);
+
+  return (
+    <div className="phoneRow">
+      <div>
+        <Text size={11} className="label">Phone</Text>
+        <span>{text}</span>
+      </div>
+      <button className="copyIconButton" onClick={() => copyText(text)} title="Copy phone" type="button">
+        ⧉
+      </button>
     </div>
   );
 }
@@ -242,27 +262,13 @@ function TripMetric({ label, count, onClick }) {
   );
 }
 
-function CopyBlock({ label, value, tone }) {
+function TextBlock({ label, value, tone }) {
   if (!hasValue(value)) return null;
   return (
     <section className={tone === 'warning' ? 'copyBlock warningBlock' : 'copyBlock'}>
       <Text size={11} className="label">{label}</Text>
-      <CopyLine value={formatValue(value)} multiline />
+      <div className="plainText multiline">{formatValue(value)}</div>
     </section>
-  );
-}
-
-function CopyLine({ value, strong = false, muted = false, multiline = false, className = '' }) {
-  if (!hasValue(value)) return null;
-  const text = formatValue(value);
-
-  return (
-    <div className={['copyLine', multiline ? 'multiline' : '', muted ? 'muted' : '', className].filter(Boolean).join(' ')}>
-      <span className={strong ? 'strong' : ''}>{text}</span>
-      <button className="copyButton" onClick={() => copyText(text)} title="Copy" type="button">
-        Copy
-      </button>
-    </div>
   );
 }
 
@@ -294,15 +300,6 @@ function getCustomerEmail(customer) {
   if (typeof firstEmail?.email === 'string') return firstEmail.email;
 
   return '';
-}
-
-function getCustomerName(fields) {
-  const directName = fields.Client || fields['Preferred Name'];
-  if (directName) return formatValue(directName);
-
-  const firstName = fields['First Name'] || '';
-  const surname = fields.Surname || '';
-  return [firstName, surname].filter(Boolean).join(' ');
 }
 
 function hasValue(value) {
