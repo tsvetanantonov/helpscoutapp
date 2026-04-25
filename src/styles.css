@@ -65,6 +65,11 @@ body {
   padding: 7px;
 }
 
+.infoRow > div {
+  display: grid;
+  gap: 2px;
+}
+
 .infoRow span {
   color: #1f2933;
   display: block;
