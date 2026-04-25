@@ -124,8 +124,8 @@ function HomePage({ customer, customerData, fields }) {
 
       <section className="summaryStack">
         <div className="infoGrid">
-          <InfoRow label="Age" value={age} />
           <PhoneRow value={phone} />
+          <InfoRow label="Age" value={age} />
         </div>
       </section>
 
@@ -146,7 +146,7 @@ function LeadsTable({ leads }) {
     <section className="section">
       <div className="dataTable leadsTable">
         <div className="tableHeader">
-          <span>Trip</span>
+          <span>Lead Trip</span>
           <span>Status</span>
           <span>Date</span>
           <span />

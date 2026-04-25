@@ -12,7 +12,7 @@ body {
 .app {
   position: relative;
   width: 100%;
-  padding: 0 12px 12px;
+  padding: 34px 12px 12px;
 }
 
 .iconButton,
@@ -57,11 +57,11 @@ body {
 .infoGrid {
   display: grid;
   gap: 6px;
-  grid-template-columns: 0.45fr 1fr;
+  grid-template-columns: 1fr 0.45fr;
 }
 
 .infoRow {
-  align-items: center;
+  align-items: flex-start;
   background: #f7f9fb;
   border: 1px solid #d8dee6;
   border-radius: 6px;
@@ -78,6 +78,10 @@ body {
   font-weight: 400;
   line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+.infoRow > div > span {
+  margin-top: 2px;
 }
 
 .phoneRow {
