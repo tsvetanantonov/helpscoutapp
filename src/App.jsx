@@ -170,8 +170,6 @@ function TripsSection({ bookings }) {
   const upcoming = bookings.upcoming || [];
   const past = bookings.past || [];
   const cancelled = bookings.cancelled || [];
-  const visibleUpcoming = upcoming.slice(0, 3);
-  const visiblePast = past.slice(0, 3);
 
   if (!active.length && !upcoming.length && !past.length && !cancelled.length) return null;
 
@@ -180,15 +178,10 @@ function TripsSection({ bookings }) {
       <Heading level="h2">Trips</Heading>
       <div className="tripGroups">
         <TripGroup rows={active} title="Active Trips" />
-        <TripGroup rows={visibleUpcoming} title="Upcoming Trips" />
-        <TripGroup rows={visiblePast} title="Past Trips" />
+        <TripGroup rows={upcoming} title="Upcoming Trips" />
+        <TripGroup rows={past} title="Past Trips" />
         <TripGroup rows={cancelled} title="Cancelled Trips" />
       </div>
-      <TripSummary
-        cancelled={cancelled.length}
-        pastHidden={Math.max(past.length - visiblePast.length, 0)}
-        upcomingHidden={Math.max(upcoming.length - visibleUpcoming.length, 0)}
-      />
     </section>
   );
 }
@@ -210,16 +203,6 @@ function TripGroup({ rows, title }) {
       </div>
     </div>
   );
-}
-
-function TripSummary({ upcomingHidden, pastHidden, cancelled }) {
-  const parts = [];
-  if (upcomingHidden) parts.push(`${upcomingHidden} more trips coming`);
-  if (pastHidden) parts.push(`${pastHidden} past trips`);
-  if (cancelled) parts.push(`${cancelled} cancelled trips`);
-  if (!parts.length) return null;
-
-  return <div className="tripSummary">{parts.join(', ')}</div>;
 }
 
 function AgeMetric({ value }) {
