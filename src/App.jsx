@@ -113,12 +113,6 @@ function HomePage({ customer, customerData, fields }) {
 
   return (
     <>
-      {customer?.stackerUrl && (
-        <a className="iconButton floatingCustomerLink" href={customer.stackerUrl} rel="noreferrer" target="_blank" title="Open customer in Stacker">
-          <span aria-hidden="true">&rarr;</span>
-        </a>
-      )}
-
       {notFit && <div className="alert">Not a Fit</div>}
       {clientFlag && <TextBlock label="Client Flag" value={clientFlag} tone="warning" />}
 
@@ -126,6 +120,11 @@ function HomePage({ customer, customerData, fields }) {
         <div className="infoGrid">
           <PhoneRow value={phone} />
           <InfoRow label="Age" value={age} />
+          {customer?.stackerUrl && (
+            <a className="iconButton stackerInlineButton" href={customer.stackerUrl} rel="noreferrer" target="_blank" title="Open customer in Stacker">
+              <span aria-hidden="true">&rarr;</span>
+            </a>
+          )}
         </div>
       </section>
 

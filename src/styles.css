@@ -12,7 +12,7 @@ body {
 .app {
   position: relative;
   width: 100%;
-  padding: 34px 12px 12px;
+  padding: 0 12px 12px;
 }
 
 .iconButton,
@@ -28,13 +28,6 @@ body {
   justify-content: center;
   text-decoration: none;
   width: 24px;
-}
-
-.floatingCustomerLink {
-  position: absolute;
-  right: 12px;
-  top: 0;
-  z-index: 1;
 }
 
 .alert {
@@ -55,9 +48,10 @@ body {
 }
 
 .infoGrid {
+  align-items: stretch;
   display: grid;
   gap: 6px;
-  grid-template-columns: 1fr 0.45fr;
+  grid-template-columns: minmax(0, 1fr) minmax(64px, 0.34fr) 24px;
 }
 
 .infoRow {
@@ -86,6 +80,13 @@ body {
 
 .phoneRow {
   padding-right: 7px;
+}
+
+.stackerInlineButton {
+  align-self: stretch;
+  height: auto;
+  min-height: 100%;
+  width: 24px;
 }
 
 .copyIconButton {
