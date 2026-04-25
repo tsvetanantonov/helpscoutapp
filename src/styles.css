@@ -60,9 +60,9 @@ body {
   border: 1px solid #d8dee6;
   border-radius: 6px;
   display: flex;
-  justify-content: space-between;
   min-width: 0;
   padding: 7px;
+  flex-direction: column;
 }
 
 .infoRow > div {
