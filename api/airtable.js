@@ -28,8 +28,8 @@ export default async function handler(req, res) {
     return sendJson(res, 405, { error: 'Method Not Allowed' });
   }
 
-  const email = normalizeEmail(req.query.email);
-  if (!email) {
+  const emails = parseEmails(req.query.email);
+  if (!emails.length) {
     return sendJson(res, 400, { error: 'Missing email query parameter' });
   }
 
@@ -39,47 +39,24 @@ export default async function handler(req, res) {
 
   try {
     const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
-    const customers = await base(TABLE_CUSTOMERS)
-      .select({
-        maxRecords: 3,
-        filterByFormula: `LOWER({${AIRTABLE_CUSTOMERS_EMAIL_FIELD}}) = '${escapeFormulaString(email)}'`,
-      })
-      .firstPage();
+    const customerMatches = await Promise.all(emails.map((email) => fetchCustomersByEmail(base, email)));
+    const customers = uniqueCustomerMatches(customerMatches.flat());
 
-    const customer = customers[0];
-    if (!customer) {
-      return sendJson(res, 200, { email, records: [] });
+    if (!customers.length) {
+      return sendJson(res, 200, { email: emails[0], emails, records: [], profiles: [] });
     }
 
-    const fields = customer.fields;
-    const bookingCrmTable = TABLE_BOOKING_CRM || TABLE_LEADS;
-    const [bookings, leads] = await Promise.all([
-      fetchRecordsByIds(base, TABLE_BOOKINGS, asArray(fields.Bookings)),
-      fetchRecordsByIds(base, bookingCrmTable, asArray(fields['Booking CRM'])),
-    ]);
-
-    const tripIds = unique([
-      ...asArray(fields['Current Trips']).filter(isRecordId),
-      ...asArray(fields['Past Trips']).filter(isRecordId),
-      ...bookings.flatMap((booking) => asArray(booking.fields.Trip)),
-      ...leads.flatMap((lead) => asArray(lead.fields.Trips)),
-    ]);
-    const trips = await fetchRecordsByIds(base, TABLE_TRIPS, tripIds);
-    const tripMap = new Map(trips.map((trip) => [trip.id, trip]));
-
-    const shapedCustomer = {
-      id: customer.id,
-      fields,
-      stackerUrl: `https://leatherbacktravel.stackerhq.com/crm/customers/view/cus_${customer.id}`,
-      calendlyUrl: `https://calendly.com/d/cngz-qzq-yt7?email=${encodeURIComponent(String(fields['Client Email'] || email))}`,
-    };
+    const profiles = await Promise.all(customers.map(({ customer, email }) => shapeProfile(base, customer, email)));
+    const firstProfile = profiles[0];
 
     return sendJson(res, 200, {
-      email,
-      records: [{ id: customer.id, fields }],
-      customer: shapedCustomer,
-      leads: shapeLeads(leads, tripMap),
-      bookings: shapeBookings(bookings, tripMap),
+      email: emails[0],
+      emails,
+      records: profiles.map((profile) => ({ id: profile.customer.id, fields: profile.customer.fields })),
+      profiles,
+      customer: firstProfile.customer,
+      leads: firstProfile.leads,
+      bookings: firstProfile.bookings,
     });
   } catch (error) {
     console.error('Airtable lookup failed', error);
@@ -88,6 +65,49 @@ export default async function handler(req, res) {
       details: getErrorMessage(error),
     });
   }
+}
+
+async function fetchCustomersByEmail(base, email) {
+  const customers = await base(TABLE_CUSTOMERS)
+    .select({
+      maxRecords: 3,
+      filterByFormula: `LOWER({${AIRTABLE_CUSTOMERS_EMAIL_FIELD}}) = '${escapeFormulaString(email)}'`,
+    })
+    .firstPage();
+
+  return customers.map((customer) => ({ customer, email }));
+}
+
+async function shapeProfile(base, customer, email) {
+  const fields = customer.fields;
+  const bookingCrmTable = TABLE_BOOKING_CRM || TABLE_LEADS;
+  const [bookings, leads] = await Promise.all([
+    fetchRecordsByIds(base, TABLE_BOOKINGS, asArray(fields.Bookings)),
+    fetchRecordsByIds(base, bookingCrmTable, asArray(fields['Booking CRM'])),
+  ]);
+
+  const tripIds = unique([
+    ...asArray(fields['Current Trips']).filter(isRecordId),
+    ...asArray(fields['Past Trips']).filter(isRecordId),
+    ...bookings.flatMap((booking) => asArray(booking.fields.Trip)),
+    ...leads.flatMap((lead) => asArray(lead.fields.Trips)),
+  ]);
+  const trips = await fetchRecordsByIds(base, TABLE_TRIPS, tripIds);
+  const tripMap = new Map(trips.map((trip) => [trip.id, trip]));
+
+  const shapedCustomer = {
+    id: customer.id,
+    fields,
+    matchedEmail: email,
+    stackerUrl: `https://leatherbacktravel.stackerhq.com/crm/customers/view/cus_${customer.id}`,
+    calendlyUrl: `https://calendly.com/d/cngz-qzq-yt7?email=${encodeURIComponent(String(fields['Client Email'] || email))}`,
+  };
+
+  return {
+    customer: shapedCustomer,
+    leads: shapeLeads(leads, tripMap),
+    bookings: shapeBookings(bookings, tripMap),
+  };
 }
 
 async function fetchRecordsByIds(base, tableName, ids) {
@@ -190,6 +210,17 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function uniqueCustomerMatches(matches) {
+  const seen = new Set();
+  const uniqueMatches = [];
+  for (const match of matches) {
+    if (seen.has(match.customer.id)) continue;
+    seen.add(match.customer.id);
+    uniqueMatches.push(match);
+  }
+  return uniqueMatches;
+}
+
 function isRecordId(value) {
   return typeof value === 'string' && /^rec[a-zA-Z0-9]+$/.test(value);
 }
@@ -245,6 +276,16 @@ function normalizeEmail(value) {
   if (Array.isArray(value)) return normalizeEmail(value[0]);
   if (typeof value !== 'string') return '';
   return value.trim().toLowerCase();
+}
+
+function parseEmails(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return unique(
+    values
+      .flatMap((item) => String(item || '').split(','))
+      .map((item) => normalizeEmail(item))
+      .filter(Boolean)
+  );
 }
 
 function escapeFormulaString(value) {

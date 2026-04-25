@@ -9,7 +9,8 @@ function App() {
   const [status, setStatus] = useState('loading-context');
   const [error, setError] = useState('');
 
-  const email = useMemo(() => getCustomerEmail(context?.customer), [context]);
+  const emails = useMemo(() => getCustomerEmails(context?.customer), [context]);
+  const emailQuery = emails.join(',');
 
   useEffect(() => {
     let active = true;
@@ -46,7 +47,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!email) {
+    if (!emailQuery) {
       if (status === 'ready') setCustomerData(null);
       return;
     }
@@ -55,7 +56,7 @@ function App() {
     setStatus('loading-airtable');
     setError('');
 
-    fetch(`/api/airtable?email=${encodeURIComponent(email)}`)
+    fetch(`/api/airtable?email=${encodeURIComponent(emailQuery)}`)
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) {
@@ -78,7 +79,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, [email]);
+  }, [emailQuery]);
 
   const record = customerData?.records?.[0];
   const customer = customerData?.customer;
@@ -92,31 +93,52 @@ function App() {
         <LoadingState />
       ) : error ? (
         <Message title="Could not load customer" text={error} />
-      ) : !email ? (
+      ) : !emailQuery ? (
         <Message title="No customer email" text="This Help Scout conversation does not include an email address yet." />
       ) : !record ? (
         <Message title="No Airtable match" text="No customer record was found for this email address." />
       ) : (
-        <HomePage customer={customer} customerData={customerData} fields={fields} />
+        <HomePage customerData={customerData} />
       )}
     </main>
   );
 }
 
-function HomePage({ customer, customerData, fields }) {
+function HomePage({ customerData }) {
+  const profiles = customerData?.profiles?.length
+    ? customerData.profiles
+    : [{ customer: customerData.customer, leads: customerData.leads, bookings: customerData.bookings }];
+
+  return (
+    <>
+      {profiles.map((profile, index) => (
+        <ProfilePanel
+          key={profile.customer?.id || index}
+          profile={profile}
+          showEmail={index > 0}
+        />
+      ))}
+    </>
+  );
+}
+
+function ProfilePanel({ profile, showEmail }) {
+  const customer = profile.customer;
+  const fields = customer?.fields || {};
   const age = fields.Age;
   const phone = fields['Phone Number'];
   const clientFlag = fields['Client Flag'];
   const notFit = Boolean(fields['Not a Fit']);
-  const leads = customerData?.leads || [];
-  const bookings = customerData?.bookings || {};
+  const leads = profile.leads || [];
+  const bookings = profile.bookings || {};
 
   return (
-    <>
+    <section className="profilePanel">
       {notFit && <div className="alert">Not a Fit</div>}
       {clientFlag && <TextBlock label="Client Flag" value={clientFlag} tone="warning" />}
 
       <section className="summaryStack">
+        {showEmail && <InfoRow label="Email" value={customer?.matchedEmail || fields['Client Email']} />}
         <div className="infoGrid">
           <PhoneRow value={phone} />
           <InfoRow label="Age" value={age} />
@@ -134,7 +156,7 @@ function HomePage({ customer, customerData, fields }) {
       <a className="primaryButton" href={customer?.calendlyUrl} rel="noreferrer" target="_blank">
         Calendly link
       </a>
-    </>
+    </section>
   );
 }
 
@@ -266,16 +288,18 @@ function Message({ title, text }) {
   );
 }
 
-function getCustomerEmail(customer) {
-  if (!customer) return '';
-  if (typeof customer.email === 'string') return customer.email;
+function getCustomerEmails(customer) {
+  if (!customer) return [];
+  const emails = [];
+  if (typeof customer.email === 'string') emails.push(customer.email);
 
-  const firstEmail = customer.emails?.[0];
-  if (typeof firstEmail === 'string') return firstEmail;
-  if (typeof firstEmail?.value === 'string') return firstEmail.value;
-  if (typeof firstEmail?.email === 'string') return firstEmail.email;
+  for (const item of customer.emails || []) {
+    if (typeof item === 'string') emails.push(item);
+    if (typeof item?.value === 'string') emails.push(item.value);
+    if (typeof item?.email === 'string') emails.push(item.email);
+  }
 
-  return '';
+  return [...new Set(emails.map((email) => email.trim().toLowerCase()).filter(Boolean))];
 }
 
 function hasValue(value) {
