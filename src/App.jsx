@@ -8,7 +8,6 @@ function App() {
   const [customerData, setCustomerData] = useState(null);
   const [status, setStatus] = useState('loading-context');
   const [error, setError] = useState('');
-  const [page, setPage] = useState('home');
 
   const email = useMemo(() => getCustomerEmail(context?.customer), [context]);
 
@@ -55,7 +54,6 @@ function App() {
     let active = true;
     setStatus('loading-airtable');
     setError('');
-    setPage('home');
 
     fetch(`/api/airtable?email=${encodeURIComponent(email)}`)
       .then(async (response) => {
@@ -98,31 +96,20 @@ function App() {
         <Message title="No customer email" text="This Help Scout conversation does not include an email address yet." />
       ) : !record ? (
         <Message title="No Airtable match" text="No customer record was found for this email address." />
-      ) : page === 'currentTrips' ? (
-        <TripsPage title="Future Trips" trips={customer?.currentTrips || []} onBack={() => setPage('home')} />
-      ) : page === 'pastTrips' ? (
-        <TripsPage title="Past Trips" trips={customer?.pastTrips || []} onBack={() => setPage('home')} />
       ) : (
-        <HomePage
-          customer={customer}
-          customerData={customerData}
-          fields={fields}
-          onCurrentTrips={() => setPage('currentTrips')}
-          onPastTrips={() => setPage('pastTrips')}
-        />
+        <HomePage customer={customer} customerData={customerData} fields={fields} />
       )}
     </main>
   );
 }
 
-function HomePage({ customer, customerData, fields, onCurrentTrips, onPastTrips }) {
+function HomePage({ customer, customerData, fields }) {
   const age = fields.Age;
   const phone = fields['Phone Number'];
   const clientFlag = fields['Client Flag'];
   const notFit = Boolean(fields['Not a Fit']);
-  const currentTrips = customer?.currentTrips || [];
-  const pastTrips = customer?.pastTrips || [];
-  const leads = customerData?.leads || { active: [], futureInterest: [] };
+  const leads = customerData?.leads || [];
+  const bookings = customerData?.bookings || {};
 
   return (
     <>
@@ -142,13 +129,8 @@ function HomePage({ customer, customerData, fields, onCurrentTrips, onPastTrips 
         <PhoneRow value={phone} />
       </section>
 
-      <section className="gridTwo">
-        <TripMetric label="Future Trips" count={currentTrips.length} onClick={onCurrentTrips} />
-        <TripMetric label="Past Trips" count={pastTrips.length} onClick={onPastTrips} />
-      </section>
-
-      <LeadsSection title="Leads" leads={leads.active} />
-      <FutureInterestSection leads={leads.futureInterest} />
+      <TripsSection bookings={bookings} />
+      <LeadsTable leads={leads} />
 
       <a className="primaryButton" href={customer?.calendlyUrl} rel="noreferrer" target="_blank">
         Calendly link
@@ -157,74 +139,87 @@ function HomePage({ customer, customerData, fields, onCurrentTrips, onPastTrips 
   );
 }
 
-function LeadsSection({ title, leads }) {
+function LeadsTable({ leads }) {
   if (!leads?.length) return null;
 
   return (
     <section className="section">
-      <Heading level="h2">{title}</Heading>
-      <div className="leadList">
+      <Heading level="h2">Leads</Heading>
+      <div className="dataTable leadsTable">
+        <div className="tableHeader">
+          <span>Trip</span>
+          <span>Status</span>
+          <span>Date</span>
+          <span />
+        </div>
         {leads.map((lead) => (
-          <article className={`lead ${getStatusClass(lead.status)}`} key={lead.id}>
-            <div className="leadTitle" title={lead.status}>
-              {lead.shortTripName || 'Trip not set'}
-            </div>
-            {lead.dateCreated && <div className="leadDate">{lead.dateCreated}</div>}
-            {lead.notes && <div className="leadNotes">{lead.notes}</div>}
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function FutureInterestSection({ leads }) {
-  if (!leads?.length) return null;
-
-  return (
-    <section className="section">
-      <Heading level="h2">Future Interest Leads</Heading>
-      <div className="leadList">
-        {leads.map((lead) => (
-          <article className={`lead ${getStatusClass(lead.status)}`} key={lead.id}>
-            <div className="leadTitle" title={lead.status}>
-              {lead.futureTripRequests || 'No future trip tags'}
-            </div>
-            {lead.dateCreated && <div className="leadDate">{lead.dateCreated}</div>}
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function TripsPage({ title, trips, onBack }) {
-  return (
-    <>
-      <header className="topbar pageTopbar">
-        <Heading level="h1">{title}</Heading>
-      </header>
-      <section className="tripSection">
-        {trips.length ? (
-          <div className="tripList">
-            {trips.map((trip, index) => (
-              <div
-                className={trip.cancelled ? 'tripItem cancelled' : 'tripItem'}
-                key={`${trip.id || trip.name}-${index}`}
-              >
-                {trip.name}
-              </div>
-            ))}
+          <div className="tableRow" key={lead.id}>
+            <span className="mainCell">{lead.trip}</span>
+            <span>{lead.status}</span>
+            <span>{lead.dateAdded}</span>
+            <ExternalLink href={lead.stackerUrl} label="Open lead" />
           </div>
-        ) : (
-          <Text>No trips found.</Text>
-        )}
-      </section>
-      <button className="secondaryButton" onClick={onBack} type="button">
-        Back
-      </button>
-    </>
+        ))}
+      </div>
+    </section>
   );
+}
+
+function TripsSection({ bookings }) {
+  const active = bookings.active || [];
+  const upcoming = bookings.upcoming || [];
+  const past = bookings.past || [];
+  const cancelled = bookings.cancelled || [];
+  const visibleUpcoming = upcoming.slice(0, 3);
+  const visiblePast = past.slice(0, 3);
+
+  if (!active.length && !upcoming.length && !past.length && !cancelled.length) return null;
+
+  return (
+    <section className="section">
+      <Heading level="h2">Trips</Heading>
+      <div className="tripGroups">
+        <TripGroup rows={active} title="Active Trips" />
+        <TripGroup rows={visibleUpcoming} title="Upcoming Trips" />
+        <TripGroup rows={visiblePast} title="Past Trips" />
+        <TripGroup rows={cancelled} title="Cancelled Trips" />
+      </div>
+      <TripSummary
+        cancelled={cancelled.length}
+        pastHidden={Math.max(past.length - visiblePast.length, 0)}
+        upcomingHidden={Math.max(upcoming.length - visibleUpcoming.length, 0)}
+      />
+    </section>
+  );
+}
+
+function TripGroup({ rows, title }) {
+  if (!rows?.length) return null;
+
+  return (
+    <div className="tripGroup">
+      <div className="groupTitle">{title}</div>
+      <div className="dataTable tripsTable">
+        {rows.map((booking) => (
+          <div className={`tableRow tripRow ${booking.group}`} key={booking.id}>
+            <span className="mainCell">{booking.name}</span>
+            <span>{booking.startDate}</span>
+            <ExternalLink href={booking.stackerUrl} label="Open booking" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TripSummary({ upcomingHidden, pastHidden, cancelled }) {
+  const parts = [];
+  if (upcomingHidden) parts.push(`${upcomingHidden} more trips coming`);
+  if (pastHidden) parts.push(`${pastHidden} past trips`);
+  if (cancelled) parts.push(`${cancelled} cancelled trips`);
+  if (!parts.length) return null;
+
+  return <div className="tripSummary">{parts.join(', ')}</div>;
 }
 
 function AgeMetric({ value }) {
@@ -254,12 +249,11 @@ function PhoneRow({ value }) {
   );
 }
 
-function TripMetric({ label, count, onClick }) {
+function ExternalLink({ href, label }) {
   return (
-    <button className="metric metricButton" onClick={onClick} type="button">
-      <Text size={11} className="label">{label}</Text>
-      <span>{count}</span>
-    </button>
+    <a className="rowLink" href={href} rel="noreferrer" target="_blank" title={label}>
+      ↗
+    </a>
   );
 }
 
@@ -321,22 +315,6 @@ function copyText(text) {
   }
 
   navigator.clipboard?.writeText(text);
-}
-
-function getStatusClass(status) {
-  const map = {
-    'Registration of Interest': 'statusRegistration',
-    Waitlist: 'statusWaitlist',
-    'Strong Interest': 'statusStrong',
-    'Pending Deposit': 'statusPending',
-    'Deposit Received': 'statusDeposit',
-    'Ready to Process': 'statusReady',
-    'Closed Come Back': 'statusComeBack',
-    'Closed Lost': 'statusLost',
-    'Future Interest': 'statusFuture',
-  };
-
-  return map[status] || 'statusDefault';
 }
 
 export default App;

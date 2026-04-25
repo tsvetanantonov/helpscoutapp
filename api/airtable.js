@@ -66,15 +66,12 @@ export default async function handler(req, res) {
     ]);
     const trips = await fetchRecordsByIds(base, TABLE_TRIPS, tripIds);
     const tripMap = new Map(trips.map((trip) => [trip.id, trip]));
-    const bookingTripMap = buildBookingTripMap(bookings);
 
     const shapedCustomer = {
       id: customer.id,
       fields,
       stackerUrl: `https://leatherbacktravel.stackerhq.com/crm/customers/view/cus_${customer.id}`,
       calendlyUrl: `https://calendly.com/d/cngz-qzq-yt7?email=${encodeURIComponent(String(fields['Client Email'] || email))}`,
-      currentTrips: shapeTripList(fields['Current Trips'], tripMap, bookingTripMap),
-      pastTrips: shapeTripList(fields['Past Trips'], tripMap, bookingTripMap),
     };
 
     return sendJson(res, 200, {
@@ -82,6 +79,7 @@ export default async function handler(req, res) {
       records: [{ id: customer.id, fields }],
       customer: shapedCustomer,
       leads: shapeLeads(leads, tripMap),
+      bookings: shapeBookings(bookings, tripMap),
     });
   } catch (error) {
     console.error('Airtable lookup failed', error);
@@ -110,54 +108,65 @@ async function fetchRecordsByIds(base, tableName, ids) {
 }
 
 function shapeLeads(records, tripMap) {
-  const openLeads = records
+  return records
     .map((record) => {
       const fields = record.fields;
       const status = String(fields.Status || '');
       const trip = tripMap.get(asArray(fields.Trips)[0]);
+      const dateRaw = firstValue(fields['Date Created'] || fields['Date Added']);
       return {
         id: record.id,
         status,
-        shortTripName: buildShortTripName(fields, trip?.fields),
-        notes: firstValue(fields['Booking Notes']),
-        dateCreated: formatShortDate(fields['Date Created'] || fields['Date Added']),
+        trip: buildShortTripName(fields, trip?.fields) || firstValue(fields['D-Future-Trip-Requests']) || formatValue(fields['D-Future-Trip-Tags']) || 'Trip not set',
+        dateAdded: formatShortDate(dateRaw),
+        dateAddedTimestamp: parseDate(dateRaw)?.getTime() || 0,
+        stackerUrl: `https://leatherbacktravel.stackerhq.com/crm/booking-crm/view/bcr_${record.id}`,
         futureTripRequests: firstValue(fields['D-Future-Trip-Requests']) || formatValue(fields['D-Future-Trip-Tags']),
       };
     })
-    .filter((lead) => OPEN_LEAD_STATUSES.includes(lead.status));
+    .filter((lead) => OPEN_LEAD_STATUSES.includes(lead.status))
+    .sort((a, b) => b.dateAddedTimestamp - a.dateAddedTimestamp);
+}
+
+function shapeBookings(records, tripMap) {
+  const today = startOfDay(new Date());
+  const rows = records.map((record) => {
+    const fields = record.fields;
+    const trip = tripMap.get(asArray(fields.Trip)[0]);
+    const tripFields = trip?.fields || {};
+    const startDateRaw = firstValue(fields['Trip Start Date'] || tripFields['Start Date']);
+    const endDateRaw = firstValue(fields['AUT: Trip End Date'] || fields['Finish Date (from Trip)'] || tripFields['Finish Date']);
+    const startDate = parseDate(startDateRaw);
+    const endDate = parseDate(endDateRaw);
+    const cancelled = Boolean(fields.Cancelled);
+    const group = getBookingGroup({ cancelled, startDate, endDate, today });
+
+    return {
+      id: record.id,
+      name: firstValue(tripFields['Trip Title & Code']) || firstValue(fields['Trip Title']) || firstValue(fields['Booking ID']) || 'Trip not set',
+      startDate: formatShortDate(startDateRaw),
+      endDate: formatShortDate(endDateRaw),
+      startTimestamp: startDate?.getTime() || 0,
+      endTimestamp: endDate?.getTime() || 0,
+      group,
+      stackerUrl: `https://leatherbacktravel.stackerhq.com/crm/bookings/view/boo_${record.id}`,
+    };
+  });
 
   return {
-    futureInterest: openLeads.filter((lead) => lead.status === 'Future Interest'),
-    active: openLeads.filter((lead) => lead.status !== 'Future Interest'),
+    active: rows.filter((row) => row.group === 'active' || row.group === 'recent').sort((a, b) => a.endTimestamp - b.endTimestamp),
+    upcoming: rows.filter((row) => row.group === 'upcoming').sort((a, b) => a.startTimestamp - b.startTimestamp),
+    past: rows.filter((row) => row.group === 'past').sort((a, b) => b.endTimestamp - a.endTimestamp),
+    cancelled: rows.filter((row) => row.group === 'cancelled').sort((a, b) => b.startTimestamp - a.startTimestamp),
   };
 }
 
-function shapeTripList(rawTrips, tripMap, bookingTripMap) {
-  return asArray(rawTrips)
-    .map((value) => {
-      const trip = tripMap.get(value);
-      const tripFields = trip?.fields || {};
-      const fallbackName = String(value || '');
-      return {
-        id: trip?.id || '',
-        name: firstValue(tripFields['Trip Title & Code']) || fallbackName,
-        cancelled: Boolean(bookingTripMap.get(trip?.id || value)?.cancelled),
-      };
-    })
-    .filter((trip) => trip.name);
-}
-
-function buildBookingTripMap(bookings) {
-  const map = new Map();
-  for (const booking of bookings) {
-    for (const tripId of asArray(booking.fields.Trip)) {
-      map.set(tripId, {
-        bookingId: booking.id,
-        cancelled: Boolean(booking.fields.Cancelled),
-      });
-    }
-  }
-  return map;
+function getBookingGroup({ cancelled, startDate, endDate, today }) {
+  if (cancelled) return 'cancelled';
+  if (startDate && endDate && startDate <= today && endDate >= today) return 'active';
+  if (endDate && endDate < today && daysBetween(endDate, today) <= 30) return 'recent';
+  if (startDate && startDate > today) return 'upcoming';
+  return 'past';
 }
 
 function buildShortTripName(leadFields, tripFields = {}) {
@@ -186,12 +195,11 @@ function isRecordId(value) {
 }
 
 function formatShortDate(value) {
-  const raw = firstValue(value);
+  const raw = value instanceof Date ? value.toISOString() : firstValue(value);
   if (!raw) return '';
 
-  const friendlyMatch = raw.match(/\(([^)]+)\)/);
-  const date = new Date(friendlyMatch?.[1] || raw);
-  if (Number.isNaN(date.getTime())) return raw;
+  const date = parseDate(raw);
+  if (!date) return raw;
 
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -199,6 +207,23 @@ function formatShortDate(value) {
     year: 'numeric',
     timeZone: 'UTC',
   }).format(date);
+}
+
+function parseDate(value) {
+  const raw = firstValue(value);
+  if (!raw) return null;
+
+  const friendlyMatch = raw.match(/\(([^)]+)\)/);
+  const date = new Date(friendlyMatch?.[1] || raw);
+  return Number.isNaN(date.getTime()) ? null : startOfDay(date);
+}
+
+function startOfDay(date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function daysBetween(start, end) {
+  return Math.floor((end.getTime() - start.getTime()) / 86400000);
 }
 
 function formatValue(value) {

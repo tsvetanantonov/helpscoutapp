@@ -25,32 +25,19 @@ body {
   margin-bottom: 7px;
 }
 
-.pageTopbar {
-  border-bottom: 1px solid #d8dee6;
-  justify-content: flex-start;
-  margin-bottom: 8px;
-  padding-bottom: 7px;
-}
-
-.pageTopbar h1 {
-  color: #1f2933;
-  font-size: 15px;
-  line-height: 1.2;
-  margin: 0;
-}
-
-.iconButton {
+.iconButton,
+.rowLink {
   align-items: center;
   border: 1px solid #b8c5d1;
   border-radius: 6px;
   color: #1f2933;
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 15px;
-  height: 26px;
+  font-size: 14px;
+  height: 24px;
   justify-content: center;
   text-decoration: none;
-  width: 26px;
+  width: 24px;
 }
 
 .alert {
@@ -119,35 +106,12 @@ body {
   opacity: 1;
 }
 
-.gridTwo {
-  display: grid;
-  gap: 6px;
-  grid-template-columns: 1fr 1fr;
-  margin-bottom: 10px;
-}
-
-.metric,
 .copyBlock {
   background: #f7f9fb;
   border: 1px solid #d8dee6;
   border-radius: 6px;
   min-width: 0;
   padding: 7px;
-}
-
-.metricButton {
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-}
-
-.metricButton span {
-  color: #1f2933;
-  display: block;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.2;
 }
 
 .warningBlock {
@@ -159,7 +123,7 @@ body {
 .section {
   border-top: 1px solid #d8dee6;
   display: grid;
-  gap: 0;
+  gap: 6px;
   margin-top: 10px;
   padding-top: 8px;
 }
@@ -168,108 +132,104 @@ body {
   color: #1f2933;
   font-size: 14px;
   line-height: 1.2;
-  margin: 0 0 2px;
+  margin: 0;
 }
 
-.leadList,
-.tripList {
+.dataTable {
+  border: 1px solid #d8dee6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.tableHeader,
+.tableRow {
+  align-items: center;
   display: grid;
+  gap: 6px;
+  min-width: 0;
 }
 
-.lead {
+.leadsTable .tableHeader,
+.leadsTable .tableRow {
+  grid-template-columns: minmax(92px, 1.45fr) minmax(68px, 0.9fr) minmax(58px, 0.65fr) 24px;
+}
+
+.tripsTable .tableRow {
+  grid-template-columns: minmax(120px, 1fr) minmax(62px, 0.45fr) 24px;
+}
+
+.tableHeader {
+  background: #f7f9fb;
   border-bottom: 1px solid #d8dee6;
-  border-left: 4px solid #d8dee6;
-  display: grid;
-  gap: 3px;
-  padding: 7px 0 7px 8px;
-  position: relative;
+  color: #1f2933;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px;
 }
 
-.lead:last-child,
-.tripItem:last-child {
+.tableRow {
+  border-bottom: 1px solid #d8dee6;
+  color: #1f2933;
+  font-size: 12px;
+  line-height: 1.25;
+  padding: 7px 6px;
+}
+
+.tableRow:last-child {
   border-bottom: 0;
 }
 
-.leadTitle {
-  color: #1f2933;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.25;
+.tableRow span {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.leadDate {
-  color: #5b6773;
-  font-size: 11px;
-  line-height: 1.25;
+.mainCell {
+  font-weight: 700;
 }
 
-.leadNotes {
+.tripGroups {
+  display: grid;
+  gap: 7px;
+}
+
+.tripGroup {
+  display: grid;
+  gap: 3px;
+}
+
+.groupTitle {
   color: #1f2933;
   font-size: 12px;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
+  font-weight: 700;
 }
 
-.statusRegistration {
-  border-left-color: #f4d8c8;
+.tripRow.active {
+  background: #e9f8ef;
 }
 
-.statusWaitlist {
-  border-left-color: #d9d9d9;
+.tripRow.recent {
+  background: #fff3e0;
 }
 
-.statusStrong {
-  border-left-color: #f7df8a;
+.tripRow.upcoming {
+  background: #fffbe6;
 }
 
-.statusPending {
-  border-left-color: #bceee2;
+.tripRow.past {
+  background: #ffffff;
 }
 
-.statusDeposit {
-  border-left-color: #bde8b5;
-}
-
-.statusReady {
-  border-left-color: #8ed883;
-}
-
-.statusComeBack {
-  border-left-color: #c9b6f2;
-}
-
-.statusLost {
-  border-left-color: #4b5563;
-}
-
-.statusFuture {
-  border-left-color: #7db7e8;
-}
-
-.statusDefault {
-  border-left-color: #d8dee6;
-}
-
-.tripSection {
-  border-top: 0;
-  margin-top: 0;
-  padding-top: 0;
-}
-
-.tripItem {
-  border-bottom: 1px solid #d8dee6;
-  color: #1f2933;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-  padding: 8px 0;
-}
-
-.tripItem.cancelled {
+.tripRow.cancelled {
+  background: #f4f5f6;
   color: #c41d1d;
+}
+
+.tripSummary {
+  color: #1f2933;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .label {
@@ -290,10 +250,12 @@ body {
   white-space: pre-wrap;
 }
 
-.primaryButton,
-.secondaryButton {
+.primaryButton {
   align-items: center;
+  background: #1976a3;
+  border: 1px solid #1976a3;
   border-radius: 6px;
+  color: #ffffff;
   cursor: pointer;
   display: flex;
   font-size: 13px;
@@ -303,18 +265,6 @@ body {
   min-height: 30px;
   text-decoration: none;
   width: 100%;
-}
-
-.primaryButton {
-  background: #1976a3;
-  border: 1px solid #1976a3;
-  color: #ffffff;
-}
-
-.secondaryButton {
-  background: #ffffff;
-  border: 1px solid #b8c5d1;
-  color: #1f2933;
 }
 
 .message {
