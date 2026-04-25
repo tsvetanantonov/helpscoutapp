@@ -11,33 +11,188 @@ body {
 
 .app {
   width: 100%;
-  padding: 16px;
+  padding: 10px 12px 12px;
 }
 
-.header {
+.topbar {
+  align-items: flex-start;
   border-bottom: 1px solid #e4e7ec;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
 }
 
-.profile {
+.topbar h1 {
+  font-size: 18px;
+  line-height: 1.2;
+  margin: 0 0 2px;
+}
+
+.iconButton {
+  align-items: center;
+  border: 1px solid #cfd7df;
+  border-radius: 6px;
+  color: #2f4f68;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 15px;
+  height: 28px;
+  justify-content: center;
+  text-decoration: none;
+  width: 28px;
+}
+
+.alert {
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+  border-radius: 6px;
+  color: #a8071a;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  padding: 7px 8px;
+}
+
+.gridTwo {
   display: grid;
-  gap: 14px;
+  gap: 6px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 10px;
 }
 
-.detail {
-  border-bottom: 1px solid #eef1f4;
-  padding-bottom: 12px;
+.metric,
+.copyBlock {
+  background: #f7f9fb;
+  border: 1px solid #e4e7ec;
+  border-radius: 6px;
+  min-width: 0;
+  padding: 7px;
 }
 
-.detailMultiline p {
-  white-space: pre-wrap;
+.metricButton {
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.metricButton span {
+  color: #1f2933;
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.warningBlock {
+  background: #fffbe6;
+  border-color: #ffe58f;
+  margin-bottom: 8px;
+}
+
+.section {
+  border-top: 1px solid #e4e7ec;
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+  padding-top: 9px;
+}
+
+.section h2 {
+  font-size: 14px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.leadList,
+.tripList {
+  display: grid;
+  gap: 7px;
+}
+
+.lead {
+  display: grid;
+  gap: 3px;
 }
 
 .label {
   color: #667085;
   display: block;
-  margin-bottom: 4px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.copyLine {
+  align-items: flex-start;
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.copyLine span {
+  flex: 1 1 auto;
+  font-size: 13px;
+  line-height: 1.3;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.copyLine.muted span {
+  color: #405261;
+  font-size: 12px;
+}
+
+.copyLine.multiline span {
+  white-space: pre-wrap;
+}
+
+.copyLine .strong {
+  font-weight: 700;
+}
+
+.copyLine.cancelled span {
+  color: #c41d1d;
+}
+
+.copyButton {
+  background: transparent;
+  border: 0;
+  color: #1976a3;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1.3;
+  padding: 1px 0;
+}
+
+.primaryButton,
+.secondaryButton {
+  align-items: center;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  font-size: 13px;
+  font-weight: 700;
+  justify-content: center;
+  margin-top: 12px;
+  min-height: 30px;
+  text-decoration: none;
+  width: 100%;
+}
+
+.primaryButton {
+  background: #1976a3;
+  border: 1px solid #1976a3;
+  color: #ffffff;
+}
+
+.secondaryButton {
+  background: #ffffff;
+  border: 1px solid #cfd7df;
+  color: #2f4f68;
 }
 
 .message {
@@ -45,41 +200,4 @@ body {
   display: grid;
   gap: 8px;
   padding: 18px 0;
-}
-
-.raw {
-  border-top: 1px solid #e4e7ec;
-  margin-top: 4px;
-  padding-top: 12px;
-}
-
-.raw summary {
-  color: #405261;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.raw dl {
-  display: grid;
-  gap: 10px;
-  margin: 12px 0 0;
-}
-
-.field {
-  display: grid;
-  gap: 3px;
-}
-
-.field dt {
-  color: #667085;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.field dd {
-  font-size: 13px;
-  line-height: 1.4;
-  margin: 0;
-  overflow-wrap: anywhere;
 }

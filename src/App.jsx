@@ -2,25 +2,13 @@ import HelpScout from '@helpscout/javascript-sdk';
 import { DefaultStyle, Heading, Spinner, Text, useSetAppHeight } from '@helpscout/ui-kit';
 import { useEffect, useMemo, useState } from 'react';
 
-const FIELD_PREFERENCES = {
-  name: ['Client', 'Preferred Name', 'First Name', 'Name', 'Full Name', 'Customer Name', 'Contact Name'],
-  status: ['Travel Profile Status', 'Status', 'Stage', 'Customer Status'],
-  phone: ['Phone Number', 'Phone', 'Mobile'],
-  altEmail: ['Alt Email', 'Alt Email 2'],
-  flag: ['Client Flag'],
-  currentTrips: ['Current Trips', 'TripsBooked', 'Trips'],
-  pastTrips: ['Past Trips'],
-  activeBookings: ['Active Bookings', 'Upcoming Trips #', 'Total # of Bookings'],
-  lastBookingDate: ['Last Booking Date'],
-  notes: ['About Guest', 'Action Items', 'Marketing Notes', 'Medical & Other', 'Dietary Restrictions'],
-};
-
 function App() {
   const appRef = useSetAppHeight();
   const [context, setContext] = useState(null);
   const [customerData, setCustomerData] = useState(null);
   const [status, setStatus] = useState('loading-context');
   const [error, setError] = useState('');
+  const [page, setPage] = useState('home');
 
   const email = useMemo(() => getCustomerEmail(context?.customer), [context]);
 
@@ -67,6 +55,7 @@ function App() {
     let active = true;
     setStatus('loading-airtable');
     setError('');
+    setPage('home');
 
     fetch(`/api/airtable?email=${encodeURIComponent(email)}`)
       .then(async (response) => {
@@ -94,15 +83,12 @@ function App() {
   }, [email]);
 
   const record = customerData?.records?.[0];
-  const fields = record?.fields || {};
+  const customer = customerData?.customer;
+  const fields = customer?.fields || record?.fields || {};
 
   return (
     <main className="app" ref={appRef}>
       <DefaultStyle />
-      <header className="header">
-        <Heading level="h1">Airtable Customer</Heading>
-        {email && <Text size={13}>{email}</Text>}
-      </header>
 
       {status === 'loading-context' || status === 'loading-airtable' ? (
         <LoadingState />
@@ -112,37 +98,171 @@ function App() {
         <Message title="No customer email" text="This Help Scout conversation does not include an email address yet." />
       ) : !record ? (
         <Message title="No Airtable match" text="No customer record was found for this email address." />
+      ) : page === 'currentTrips' ? (
+        <TripsPage title="Future Trips" trips={customer?.currentTrips || []} onBack={() => setPage('home')} />
+      ) : page === 'pastTrips' ? (
+        <TripsPage title="Past Trips" trips={customer?.pastTrips || []} onBack={() => setPage('home')} />
       ) : (
-        <section className="profile">
-          <div>
-            <Text size={12} className="label">Name</Text>
-            <Heading level="h2">{getCustomerName(fields) || 'Unnamed customer'}</Heading>
-          </div>
-
-          <Detail label="Travel profile" value={pickField(fields, FIELD_PREFERENCES.status)} />
-          <Detail label="Phone" value={pickField(fields, FIELD_PREFERENCES.phone)} />
-          <Detail label="Alt email" value={pickField(fields, FIELD_PREFERENCES.altEmail)} />
-          <Detail label="Active bookings" value={pickField(fields, FIELD_PREFERENCES.activeBookings)} />
-          <Detail label="Current trips" value={pickField(fields, FIELD_PREFERENCES.currentTrips)} />
-          <Detail label="Past trips" value={pickField(fields, FIELD_PREFERENCES.pastTrips)} />
-          <Detail label="Last booking date" value={pickField(fields, FIELD_PREFERENCES.lastBookingDate)} />
-          <Detail label="Client flag" value={pickField(fields, FIELD_PREFERENCES.flag)} multiline />
-          <Detail label="Notes" value={pickField(fields, FIELD_PREFERENCES.notes)} multiline />
-
-          <details className="raw">
-            <summary>All Airtable fields</summary>
-            <dl>
-              {Object.entries(fields).map(([key, value]) => (
-                <div className="field" key={key}>
-                  <dt>{key}</dt>
-                  <dd>{formatValue(value)}</dd>
-                </div>
-              ))}
-            </dl>
-          </details>
-        </section>
+        <HomePage
+          customer={customer}
+          customerData={customerData}
+          email={email}
+          fields={fields}
+          onCurrentTrips={() => setPage('currentTrips')}
+          onPastTrips={() => setPage('pastTrips')}
+        />
       )}
     </main>
+  );
+}
+
+function HomePage({ customer, customerData, email, fields, onCurrentTrips, onPastTrips }) {
+  const name = getCustomerName(fields);
+  const age = fields.Age;
+  const phone = fields['Phone Number'];
+  const clientFlag = fields['Client Flag'];
+  const notFit = Boolean(fields['Not a Fit']);
+  const currentTrips = customer?.currentTrips || [];
+  const pastTrips = customer?.pastTrips || [];
+  const leads = customerData?.leads || { active: [], futureInterest: [] };
+
+  return (
+    <>
+      <header className="topbar">
+        <div>
+          <Heading level="h1">{name || 'Airtable Customer'}</Heading>
+          <CopyLine value={email} muted />
+        </div>
+        {customer?.stackerUrl && (
+          <a className="iconButton" href={customer.stackerUrl} rel="noreferrer" target="_blank" title="Open customer in Stacker">
+            <span aria-hidden="true">↗</span>
+          </a>
+        )}
+      </header>
+
+      {notFit && <div className="alert">Not a Fit</div>}
+      {clientFlag && <CopyBlock label="Client Flag" value={clientFlag} tone="warning" />}
+
+      <section className="gridTwo">
+        <CopyMetric label="Age" value={age} />
+        <CopyMetric label="Phone" value={phone} />
+        <TripMetric label="Future Trips" count={currentTrips.length} onClick={onCurrentTrips} />
+        <TripMetric label="Past Trips" count={pastTrips.length} onClick={onPastTrips} />
+      </section>
+
+      <LeadsSection title="Leads" leads={leads.active} />
+      <FutureInterestSection leads={leads.futureInterest} />
+
+      <a className="primaryButton" href={customer?.calendlyUrl} rel="noreferrer" target="_blank">
+        Calendly link
+      </a>
+    </>
+  );
+}
+
+function LeadsSection({ title, leads }) {
+  if (!leads?.length) return null;
+
+  return (
+    <section className="section">
+      <Heading level="h2">{title}</Heading>
+      <div className="leadList">
+        {leads.map((lead) => (
+          <article className="lead" key={lead.id}>
+            <CopyLine value={`${lead.abbreviation} - ${lead.shortTripName || 'Trip not set'} :`} strong />
+            {lead.notes && <CopyLine value={lead.notes} multiline />}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FutureInterestSection({ leads }) {
+  if (!leads?.length) return null;
+
+  return (
+    <section className="section">
+      <Heading level="h2">Future Interest Leads</Heading>
+      <div className="leadList">
+        {leads.map((lead) => (
+          <article className="lead" key={lead.id}>
+            <CopyLine value={lead.futureTripRequests || 'No future trip tags'} multiline />
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TripsPage({ title, trips, onBack }) {
+  return (
+    <>
+      <header className="topbar">
+        <Heading level="h1">{title}</Heading>
+      </header>
+      <section className="section">
+        {trips.length ? (
+          <div className="tripList">
+            {trips.map((trip, index) => (
+              <CopyLine
+                key={`${trip.id || trip.name}-${index}`}
+                value={trip.name}
+                className={trip.cancelled ? 'cancelled' : ''}
+              />
+            ))}
+          </div>
+        ) : (
+          <Text>No trips found.</Text>
+        )}
+      </section>
+      <button className="secondaryButton" onClick={onBack} type="button">
+        Back
+      </button>
+    </>
+  );
+}
+
+function CopyMetric({ label, value }) {
+  if (!hasValue(value)) return null;
+  return (
+    <div className="metric">
+      <Text size={11} className="label">{label}</Text>
+      <CopyLine value={formatValue(value)} strong />
+    </div>
+  );
+}
+
+function TripMetric({ label, count, onClick }) {
+  return (
+    <button className="metric metricButton" onClick={onClick} type="button">
+      <Text size={11} className="label">{label}</Text>
+      <span>{count}</span>
+    </button>
+  );
+}
+
+function CopyBlock({ label, value, tone }) {
+  if (!hasValue(value)) return null;
+  return (
+    <section className={tone === 'warning' ? 'copyBlock warningBlock' : 'copyBlock'}>
+      <Text size={11} className="label">{label}</Text>
+      <CopyLine value={formatValue(value)} multiline />
+    </section>
+  );
+}
+
+function CopyLine({ value, strong = false, muted = false, multiline = false, className = '' }) {
+  if (!hasValue(value)) return null;
+  const text = formatValue(value);
+
+  return (
+    <div className={['copyLine', multiline ? 'multiline' : '', muted ? 'muted' : '', className].filter(Boolean).join(' ')}>
+      <span className={strong ? 'strong' : ''}>{text}</span>
+      <button className="copyButton" onClick={() => copyText(text)} title="Copy" type="button">
+        Copy
+      </button>
+    </div>
   );
 }
 
@@ -164,17 +284,6 @@ function Message({ title, text }) {
   );
 }
 
-function Detail({ label, value, multiline = false }) {
-  if (!value) return null;
-
-  return (
-    <div className={multiline ? 'detail detailMultiline' : 'detail'}>
-      <Text size={12} className="label">{label}</Text>
-      <Text>{formatValue(value)}</Text>
-    </div>
-  );
-}
-
 function getCustomerEmail(customer) {
   if (!customer) return '';
   if (typeof customer.email === 'string') return customer.email;
@@ -187,26 +296,28 @@ function getCustomerEmail(customer) {
   return '';
 }
 
-function pickField(fields, names) {
-  for (const name of names) {
-    if (fields[name]) return fields[name];
-  }
-  return '';
-}
-
 function getCustomerName(fields) {
-  const directName = pickField(fields, FIELD_PREFERENCES.name);
-  if (directName) return directName;
+  const directName = fields.Client || fields['Preferred Name'];
+  if (directName) return formatValue(directName);
 
-  const firstName = fields['Preferred Name'] || fields['First Name'] || '';
+  const firstName = fields['First Name'] || '';
   const surname = fields.Surname || '';
   return [firstName, surname].filter(Boolean).join(' ');
 }
 
+function hasValue(value) {
+  if (Array.isArray(value)) return value.length > 0;
+  return value !== undefined && value !== null && value !== '';
+}
+
 function formatValue(value) {
-  if (Array.isArray(value)) return value.join(', ');
-  if (value && typeof value === 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return value.map(formatValue).filter(Boolean).join(', ');
+  if (value && typeof value === 'object') return value.name || value.email || value.url || JSON.stringify(value);
   return String(value ?? '');
+}
+
+function copyText(text) {
+  navigator.clipboard?.writeText(text);
 }
 
 export default App;
