@@ -64,6 +64,11 @@ body {
   padding: 7px;
   flex-direction: column;
 }
+.infoRow.phoneRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
 
 .infoRow > div {
   display: grid;
