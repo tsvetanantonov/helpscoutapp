@@ -126,8 +126,7 @@ function HomePage({ customer, customerData, fields, onCurrentTrips, onPastTrips 
 
   return (
     <>
-      <header className="topbar">
-        <Heading level="h1">Airtable</Heading>
+      <header className="topbar homeTopbar">
         {customer?.stackerUrl && (
           <a className="iconButton" href={customer.stackerUrl} rel="noreferrer" target="_blank" title="Open customer in Stacker">
             <span aria-hidden="true">↗</span>
@@ -166,10 +165,11 @@ function LeadsSection({ title, leads }) {
       <Heading level="h2">{title}</Heading>
       <div className="leadList">
         {leads.map((lead) => (
-          <article className="lead" key={lead.id}>
+          <article className={`lead ${getStatusClass(lead.status)}`} key={lead.id}>
             <div className="leadTitle" title={lead.status}>
-              {lead.abbreviation} - {lead.shortTripName || 'Trip not set'} :
+              {lead.shortTripName || 'Trip not set'}
             </div>
+            {lead.dateCreated && <div className="leadDate">{lead.dateCreated}</div>}
             {lead.notes && <div className="leadNotes">{lead.notes}</div>}
           </article>
         ))}
@@ -186,10 +186,11 @@ function FutureInterestSection({ leads }) {
       <Heading level="h2">Future Interest Leads</Heading>
       <div className="leadList">
         {leads.map((lead) => (
-          <article className="lead" key={lead.id}>
+          <article className={`lead ${getStatusClass(lead.status)}`} key={lead.id}>
             <div className="leadTitle" title={lead.status}>
               {lead.futureTripRequests || 'No future trip tags'}
             </div>
+            {lead.dateCreated && <div className="leadDate">{lead.dateCreated}</div>}
           </article>
         ))}
       </div>
@@ -200,7 +201,7 @@ function FutureInterestSection({ leads }) {
 function TripsPage({ title, trips, onBack }) {
   return (
     <>
-      <header className="topbar">
+      <header className="topbar pageTopbar">
         <Heading level="h1">{title}</Heading>
       </header>
       <section className="tripSection">
@@ -314,7 +315,28 @@ function formatValue(value) {
 }
 
 function copyText(text) {
+  if (HelpScout.setClipboardText) {
+    HelpScout.setClipboardText(text, 'Phone copied');
+    return;
+  }
+
   navigator.clipboard?.writeText(text);
+}
+
+function getStatusClass(status) {
+  const map = {
+    'Registration of Interest': 'statusRegistration',
+    Waitlist: 'statusWaitlist',
+    'Strong Interest': 'statusStrong',
+    'Pending Deposit': 'statusPending',
+    'Deposit Received': 'statusDeposit',
+    'Ready to Process': 'statusReady',
+    'Closed Come Back': 'statusComeBack',
+    'Closed Lost': 'statusLost',
+    'Future Interest': 'statusFuture',
+  };
+
+  return map[status] || 'statusDefault';
 }
 
 export default App;

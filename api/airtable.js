@@ -23,17 +23,6 @@ const OPEN_LEAD_STATUSES = [
   'Closed Lost',
 ];
 
-const STATUS_ABBREVIATIONS = {
-  'Registration of Interest': 'RoI',
-  Waitlist: 'Wait',
-  'Strong Interest': 'SI',
-  'Pending Deposit': 'PD',
-  'Deposit Received': 'DR',
-  'Ready to Process': 'R2P',
-  'Closed Come Back': 'CCB',
-  'Closed Lost': 'CL',
-};
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return sendJson(res, 405, { error: 'Method Not Allowed' });
@@ -129,9 +118,9 @@ function shapeLeads(records, tripMap) {
       return {
         id: record.id,
         status,
-        abbreviation: STATUS_ABBREVIATIONS[status] || status,
         shortTripName: buildShortTripName(fields, trip?.fields),
         notes: firstValue(fields['Booking Notes']),
+        dateCreated: formatShortDate(fields['Date Created'] || fields['Date Added']),
         futureTripRequests: firstValue(fields['D-Future-Trip-Requests']) || formatValue(fields['D-Future-Trip-Tags']),
       };
     })

@@ -16,15 +16,23 @@ body {
 
 .topbar {
   align-items: center;
-  border-bottom: 1px solid #d8dee6;
   display: flex;
   gap: 8px;
-  justify-content: space-between;
-  margin-bottom: 9px;
+}
+
+.homeTopbar {
+  justify-content: flex-end;
+  margin-bottom: 7px;
+}
+
+.pageTopbar {
+  border-bottom: 1px solid #d8dee6;
+  justify-content: flex-start;
+  margin-bottom: 8px;
   padding-bottom: 7px;
 }
 
-.topbar h1 {
+.pageTopbar h1 {
   color: #1f2933;
   font-size: 15px;
   line-height: 1.2;
@@ -170,9 +178,11 @@ body {
 
 .lead {
   border-bottom: 1px solid #d8dee6;
+  border-left: 4px solid #d8dee6;
   display: grid;
   gap: 3px;
-  padding: 7px 0;
+  padding: 7px 0 7px 8px;
+  position: relative;
 }
 
 .lead:last-child,
@@ -188,12 +198,58 @@ body {
   overflow-wrap: anywhere;
 }
 
+.leadDate {
+  color: #5b6773;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
 .leadNotes {
   color: #1f2933;
   font-size: 12px;
   line-height: 1.35;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+.statusRegistration {
+  border-left-color: #f4d8c8;
+}
+
+.statusWaitlist {
+  border-left-color: #d9d9d9;
+}
+
+.statusStrong {
+  border-left-color: #f7df8a;
+}
+
+.statusPending {
+  border-left-color: #bceee2;
+}
+
+.statusDeposit {
+  border-left-color: #bde8b5;
+}
+
+.statusReady {
+  border-left-color: #8ed883;
+}
+
+.statusComeBack {
+  border-left-color: #c9b6f2;
+}
+
+.statusLost {
+  border-left-color: #4b5563;
+}
+
+.statusFuture {
+  border-left-color: #7db7e8;
+}
+
+.statusDefault {
+  border-left-color: #d8dee6;
 }
 
 .tripSection {
