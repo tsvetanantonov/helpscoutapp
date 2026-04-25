@@ -116,7 +116,7 @@ function HomePage({ customer, customerData, fields }) {
       <header className="topbar homeTopbar">
         {customer?.stackerUrl && (
           <a className="iconButton" href={customer.stackerUrl} rel="noreferrer" target="_blank" title="Open customer in Stacker">
-            <span aria-hidden="true">↗</span>
+            <span aria-hidden="true">&rarr;</span>
           </a>
         )}
       </header>
@@ -125,8 +125,7 @@ function HomePage({ customer, customerData, fields }) {
       {clientFlag && <TextBlock label="Client Flag" value={clientFlag} tone="warning" />}
 
       <section className="summaryStack">
-        <AgeMetric value={age} />
-        <PhoneRow value={phone} />
+        <PhoneRow age={age} value={phone} />
       </section>
 
       <TripsSection bookings={bookings} />
@@ -174,8 +173,7 @@ function TripsSection({ bookings }) {
   if (!active.length && !upcoming.length && !past.length && !cancelled.length) return null;
 
   return (
-    <section className="section">
-      <Heading level="h2">Trips</Heading>
+    <section className="tripsSection">
       <div className="tripGroups">
         <TripGroup rows={active} title="Active Trips" />
         <TripGroup rows={upcoming} title="Upcoming Trips" />
@@ -205,29 +203,31 @@ function TripGroup({ rows, title }) {
   );
 }
 
-function AgeMetric({ value }) {
-  if (!hasValue(value)) return null;
-  return (
-    <div className="ageRow">
-      <Text size={11} className="label">Age</Text>
-      <span>{formatValue(value)}</span>
-    </div>
-  );
-}
-
-function PhoneRow({ value }) {
-  if (!hasValue(value)) return null;
+function PhoneRow({ age, value }) {
+  if (!hasValue(age) && !hasValue(value)) return null;
   const text = formatValue(value);
 
   return (
     <div className="phoneRow">
       <div>
-        <Text size={11} className="label">Phone</Text>
-        <span>{text}</span>
+        {hasValue(age) && (
+          <div className="phoneMeta">
+            <span className="label">Age</span>
+            <span>{formatValue(age)}</span>
+          </div>
+        )}
+        {hasValue(value) && (
+          <>
+            <Text size={11} className="label">Phone</Text>
+            <span>{text}</span>
+          </>
+        )}
       </div>
-      <button className="copyIconButton" onClick={() => copyText(text)} title="Copy phone" type="button">
-        ⧉
-      </button>
+      {hasValue(value) && (
+        <button className="copyIconButton" onClick={() => copyText(text)} title="Copy phone" type="button">
+          Copy
+        </button>
+      )}
     </div>
   );
 }
@@ -235,7 +235,7 @@ function PhoneRow({ value }) {
 function ExternalLink({ href, label }) {
   return (
     <a className="rowLink" href={href} rel="noreferrer" target="_blank" title={label}>
-      ↗
+      &rarr;
     </a>
   );
 }

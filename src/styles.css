@@ -11,7 +11,7 @@ body {
 
 .app {
   width: 100%;
-  padding: 10px 12px 12px;
+  padding: 0 12px 12px;
 }
 
 .topbar {
@@ -22,7 +22,8 @@ body {
 
 .homeTopbar {
   justify-content: flex-end;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
+  min-height: 24px;
 }
 
 .iconButton,
@@ -57,13 +58,13 @@ body {
   margin-bottom: 8px;
 }
 
-.ageRow {
-  align-items: baseline;
+.phoneMeta {
   display: flex;
   gap: 8px;
+  margin-bottom: 5px;
 }
 
-.ageRow span {
+.phoneMeta span:last-child {
   color: #1f2933;
   font-size: 13px;
   font-weight: 700;
@@ -91,14 +92,15 @@ body {
 
 .copyIconButton {
   background: transparent;
-  border: 0;
+  border: 1px solid #b8c5d1;
+  border-radius: 6px;
   color: #1f2933;
   cursor: pointer;
   flex: 0 0 auto;
-  font-size: 14px;
+  font-size: 11px;
   line-height: 1;
   opacity: 0;
-  padding: 4px;
+  padding: 5px 6px;
 }
 
 .phoneRow:hover .copyIconButton,
@@ -126,6 +128,12 @@ body {
   gap: 6px;
   margin-top: 10px;
   padding-top: 8px;
+}
+
+.tripsSection {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .section h2 {
@@ -223,6 +231,10 @@ body {
 .tripRow.cancelled {
   background: #f4f5f6;
   color: #c41d1d;
+}
+
+.tripRow.past .mainCell {
+  font-weight: 400;
 }
 
 .label {
