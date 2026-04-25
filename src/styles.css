@@ -10,20 +10,9 @@ body {
 }
 
 .app {
+  position: relative;
   width: 100%;
   padding: 0 12px 12px;
-}
-
-.topbar {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-}
-
-.homeTopbar {
-  justify-content: flex-end;
-  margin-bottom: 6px;
-  min-height: 24px;
 }
 
 .iconButton,
@@ -39,6 +28,13 @@ body {
   justify-content: center;
   text-decoration: none;
   width: 24px;
+}
+
+.floatingCustomerLink {
+  position: absolute;
+  right: 12px;
+  top: 0;
+  z-index: 1;
 }
 
 .alert {
@@ -58,19 +54,7 @@ body {
   margin-bottom: 8px;
 }
 
-.phoneMeta {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 5px;
-}
-
-.phoneMeta span:last-child {
-  color: #1f2933;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.phoneRow {
+.infoRow {
   align-items: center;
   background: #f7f9fb;
   border: 1px solid #d8dee6;
@@ -81,13 +65,17 @@ body {
   padding: 7px;
 }
 
-.phoneRow span {
+.infoRow span {
   color: #1f2933;
   display: block;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+.phoneRow {
+  padding-right: 7px;
 }
 
 .copyIconButton {

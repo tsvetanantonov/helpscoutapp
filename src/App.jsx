@@ -113,19 +113,18 @@ function HomePage({ customer, customerData, fields }) {
 
   return (
     <>
-      <header className="topbar homeTopbar">
-        {customer?.stackerUrl && (
-          <a className="iconButton" href={customer.stackerUrl} rel="noreferrer" target="_blank" title="Open customer in Stacker">
-            <span aria-hidden="true">&rarr;</span>
-          </a>
-        )}
-      </header>
+      {customer?.stackerUrl && (
+        <a className="iconButton floatingCustomerLink" href={customer.stackerUrl} rel="noreferrer" target="_blank" title="Open customer in Stacker">
+          <span aria-hidden="true">&rarr;</span>
+        </a>
+      )}
 
       {notFit && <div className="alert">Not a Fit</div>}
       {clientFlag && <TextBlock label="Client Flag" value={clientFlag} tone="warning" />}
 
       <section className="summaryStack">
-        <PhoneRow age={age} value={phone} />
+        <InfoRow label="Age" value={age} />
+        <PhoneRow value={phone} />
       </section>
 
       <TripsSection bookings={bookings} />
@@ -203,31 +202,30 @@ function TripGroup({ rows, title }) {
   );
 }
 
-function PhoneRow({ age, value }) {
-  if (!hasValue(age) && !hasValue(value)) return null;
+function InfoRow({ label, value }) {
+  if (!hasValue(value)) return null;
+
+  return (
+    <div className="infoRow">
+      <Text size={11} className="label">{label}</Text>
+      <span>{formatValue(value)}</span>
+    </div>
+  );
+}
+
+function PhoneRow({ value }) {
+  if (!hasValue(value)) return null;
   const text = formatValue(value);
 
   return (
-    <div className="phoneRow">
+    <div className="infoRow phoneRow">
       <div>
-        {hasValue(age) && (
-          <div className="phoneMeta">
-            <span className="label">Age</span>
-            <span>{formatValue(age)}</span>
-          </div>
-        )}
-        {hasValue(value) && (
-          <>
-            <Text size={11} className="label">Phone</Text>
-            <span>{text}</span>
-          </>
-        )}
+        <Text size={11} className="label">Phone</Text>
+        <span>{text}</span>
       </div>
-      {hasValue(value) && (
-        <button className="copyIconButton" onClick={() => copyText(text)} title="Copy phone" type="button">
-          Copy
-        </button>
-      )}
+      <button className="copyIconButton" onClick={() => copyText(text)} title="Copy phone" type="button">
+        Copy
+      </button>
     </div>
   );
 }
