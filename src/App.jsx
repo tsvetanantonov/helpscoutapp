@@ -123,8 +123,10 @@ function HomePage({ customer, customerData, fields }) {
       {clientFlag && <TextBlock label="Client Flag" value={clientFlag} tone="warning" />}
 
       <section className="summaryStack">
-        <InfoRow label="Age" value={age} />
-        <PhoneRow value={phone} />
+        <div className="infoGrid">
+          <InfoRow label="Age" value={age} />
+          <PhoneRow value={phone} />
+        </div>
       </section>
 
       <TripsSection bookings={bookings} />
@@ -142,7 +144,6 @@ function LeadsTable({ leads }) {
 
   return (
     <section className="section">
-      <Heading level="h2">Leads</Heading>
       <div className="dataTable leadsTable">
         <div className="tableHeader">
           <span>Trip</span>

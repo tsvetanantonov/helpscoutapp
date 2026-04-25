@@ -54,6 +54,12 @@ body {
   margin-bottom: 8px;
 }
 
+.infoGrid {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 0.45fr 1fr;
+}
+
 .infoRow {
   align-items: center;
   background: #f7f9fb;
@@ -69,7 +75,7 @@ body {
   color: #1f2933;
   display: block;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
