@@ -7,6 +7,7 @@ const {
   TABLE_BOOKINGS,
   TABLE_TRIPS,
   TABLE_BOOKING_CRM,
+  TABLE_BOOKING_MANAGERS,
   TABLE_LEADS,
   AIRTABLE_CUSTOMERS_EMAIL_FIELD = 'Client Email',
   CALENDLY_URLS,
@@ -101,8 +102,19 @@ async function shapeProfile(base, customer, email, mailboxId) {
     ...bookings.flatMap((booking) => asArray(booking.fields.Trip)),
     ...leads.flatMap((lead) => asArray(lead.fields.Trips)),
   ]);
-  const trips = await fetchRecordsByIds(base, TABLE_TRIPS, tripIds);
+  const [trips, bookingManagers] = await Promise.all([
+    fetchRecordsByIds(base, TABLE_TRIPS, tripIds),
+    fetchAllRecords(base, TABLE_BOOKING_MANAGERS),
+  ]);
   const tripMap = new Map(trips.map((trip) => [trip.id, trip]));
+
+  const coordinatorMap = new Map();
+  for (const bm of bookingManagers) {
+    const name = firstValue(bm.fields['Name']);
+    for (const tripId of asArray(bm.fields['Trips']).filter(isRecordId)) {
+      coordinatorMap.set(tripId, name);
+    }
+  }
 
   const shapedCustomer = {
     id: customer.id,
@@ -115,8 +127,18 @@ async function shapeProfile(base, customer, email, mailboxId) {
   return {
     customer: shapedCustomer,
     leads: shapeLeads(leads, tripMap),
-    bookings: shapeBookings(bookings, tripMap),
+    bookings: shapeBookings(bookings, tripMap, coordinatorMap),
   };
+}
+
+async function fetchAllRecords(base, tableName) {
+  if (!tableName) return [];
+  try {
+    return await base(tableName).select().all();
+  } catch (error) {
+    console.warn(`Could not fetch all records from ${tableName}`, getErrorMessage(error));
+    return [];
+  }
 }
 
 async function fetchRecordsByIds(base, tableName, ids) {
@@ -157,7 +179,7 @@ function shapeLeads(records, tripMap) {
     .sort((a, b) => b.dateAddedTimestamp - a.dateAddedTimestamp);
 }
 
-function shapeBookings(records, tripMap) {
+function shapeBookings(records, tripMap, coordinatorMap) {
   const today = startOfDay(new Date());
   const rows = records.map((record) => {
     const fields = record.fields;
@@ -173,7 +195,7 @@ function shapeBookings(records, tripMap) {
     return {
       id: record.id,
       name: firstValue(tripFields['Trip Title & Code']) || firstValue(fields['Trip Title']) || firstValue(fields['Booking ID']) || 'Trip not set',
-      coordinator: firstValue(tripFields['Trip Coordinator']),
+      coordinator: coordinatorMap.get(trip?.id) || '',
       startDate: formatShortDate(startDateRaw),
       endDate: formatShortDate(endDateRaw),
       startTimestamp: startDate?.getTime() || 0,
