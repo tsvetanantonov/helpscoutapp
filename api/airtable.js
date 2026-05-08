@@ -9,7 +9,15 @@ const {
   TABLE_BOOKING_CRM,
   TABLE_LEADS,
   AIRTABLE_CUSTOMERS_EMAIL_FIELD = 'Client Email',
+  CALENDLY_URLS,
 } = process.env;
+
+let calendlyMap = {};
+try {
+  if (CALENDLY_URLS) calendlyMap = JSON.parse(CALENDLY_URLS);
+} catch {
+  console.warn('CALENDLY_URLS is not valid JSON');
+}
 
 const OPEN_LEAD_STATUSES = [
   'Future Interest',
@@ -29,6 +37,7 @@ export default async function handler(req, res) {
   }
 
   const emails = parseEmails(req.query.email);
+  const mailboxId = String(req.query.mailboxId || '');
   if (!emails.length) {
     return sendJson(res, 400, { error: 'Missing email query parameter' });
   }
@@ -46,7 +55,7 @@ export default async function handler(req, res) {
       return sendJson(res, 200, { email: emails[0], emails, records: [], profiles: [] });
     }
 
-    const profiles = await Promise.all(customers.map(({ customer, email }) => shapeProfile(base, customer, email)));
+    const profiles = await Promise.all(customers.map(({ customer, email }) => shapeProfile(base, customer, email, mailboxId)));
     const firstProfile = profiles[0];
 
     return sendJson(res, 200, {
@@ -78,7 +87,7 @@ async function fetchCustomersByEmail(base, email) {
   return customers.map((customer) => ({ customer, email }));
 }
 
-async function shapeProfile(base, customer, email) {
+async function shapeProfile(base, customer, email, mailboxId) {
   const fields = customer.fields;
   const bookingCrmTable = TABLE_BOOKING_CRM || TABLE_LEADS;
   const [bookings, leads] = await Promise.all([
@@ -100,7 +109,7 @@ async function shapeProfile(base, customer, email) {
     fields,
     matchedEmail: email,
     stackerUrl: `https://leatherbacktravel.stackerhq.com/crm/customers/view/cus_${customer.id}`,
-    calendlyUrl: `https://calendly.com/d/cngz-qzq-yt7?email=${encodeURIComponent(String(fields['Client Email'] || email))}`,
+    calendlyUrl: buildCalendlyUrl(mailboxId, fields['Client Email'] || email),
   };
 
   return {
@@ -193,6 +202,13 @@ function buildShortTripName(leadFields, tripFields = {}) {
   const name = firstValue(leadFields['AUT: Nice Name']) || firstValue(tripFields['AUT: Nice Name']) || firstValue(tripFields['Trip Title & Code']) || firstValue(leadFields['Trip Name']);
   const date = firstValue(leadFields['Trip Start Date']) || firstValue(tripFields['Start Date']);
   return [name, formatShortDate(date)].filter(Boolean).join(' ');
+}
+
+function buildCalendlyUrl(mailboxId, email) {
+  const base = calendlyMap[mailboxId] || calendlyMap['default'] || '';
+  if (!base) return '';
+  const emailParam = `email=${encodeURIComponent(String(email || ''))}`;
+  return base.includes('?') ? `${base}&${emailParam}` : `${base}?${emailParam}`;
 }
 
 function firstValue(value) {

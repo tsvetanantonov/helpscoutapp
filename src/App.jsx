@@ -11,6 +11,7 @@ function App() {
 
   const emails = useMemo(() => getCustomerEmails(context?.customer), [context]);
   const emailQuery = emails.join(',');
+  const mailboxId = context?.conversation?.mailboxId ?? null;
 
   useEffect(() => {
     let active = true;
@@ -56,7 +57,9 @@ function App() {
     setStatus('loading-airtable');
     setError('');
 
-    fetch(`/api/airtable?email=${encodeURIComponent(emailQuery)}`)
+    const params = new URLSearchParams({ email: emailQuery });
+    if (mailboxId) params.set('mailboxId', String(mailboxId));
+    fetch(`/api/airtable?${params}`)
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) {
@@ -79,7 +82,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, [emailQuery]);
+  }, [emailQuery, mailboxId]);
 
   const record = customerData?.records?.[0];
   const customer = customerData?.customer;
