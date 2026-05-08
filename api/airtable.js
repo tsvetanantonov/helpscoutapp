@@ -173,6 +173,7 @@ function shapeBookings(records, tripMap) {
     return {
       id: record.id,
       name: firstValue(tripFields['Trip Title & Code']) || firstValue(fields['Trip Title']) || firstValue(fields['Booking ID']) || 'Trip not set',
+      coordinator: firstValue(tripFields['Trip Coordinator']),
       startDate: formatShortDate(startDateRaw),
       endDate: formatShortDate(endDateRaw),
       startTimestamp: startDate?.getTime() || 0,

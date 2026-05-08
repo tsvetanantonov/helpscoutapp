@@ -217,7 +217,10 @@ function TripGroup({ rows, title }) {
       <div className="dataTable tripsTable">
         {rows.map((booking) => (
           <div className={`tableRow tripRow ${booking.group}`} key={booking.id}>
-            <span className="mainCell">{booking.name}</span>
+            <span className="mainCell">
+              {booking.name}
+              {booking.coordinator && <span className="coordinatorName">{booking.coordinator}</span>}
+            </span>
             <span>{booking.startDate}</span>
             <ExternalLink href={booking.stackerUrl} label="Open booking" />
           </div>
