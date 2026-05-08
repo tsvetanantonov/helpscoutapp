@@ -168,7 +168,7 @@ function shapeLeads(records, tripMap) {
       return {
         id: record.id,
         status,
-        trip: buildShortTripName(fields, trip?.fields) || firstValue(fields['D-Future-Trip-Requests']) || formatValue(fields['D-Future-Trip-Tags']) || 'Trip not set',
+        trip: firstValue(trip?.fields['Trip Title & Code']) || firstValue(fields['D-Future-Trip-Requests']) || formatValue(fields['D-Future-Trip-Tags']) || 'Trip not set',
         dateAdded: formatShortDate(dateRaw),
         dateAddedTimestamp: parseDate(dateRaw)?.getTime() || 0,
         stackerUrl: `https://leatherbacktravel.stackerhq.com/crm/booking-crm/view/bcr_${record.id}`,
